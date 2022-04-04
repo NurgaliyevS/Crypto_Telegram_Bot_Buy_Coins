@@ -4,12 +4,13 @@ import os
 import settings
 import crypto_price
 import time
-
+import pandas as pd
+from pycoingecko import CoinGeckoAPI
 
 api_key = os.getenv('binance_api_key')
 api_secret = os.getenv('binance_api_secret')
 bot = telebot.TeleBot(os.getenv('bot'))
-
+cg = CoinGeckoAPI()
 
 def create_db_for_buy_coin():
     connect = sqlite3.connect('customer.db')
@@ -79,20 +80,56 @@ def read_sqlite_table(message):
             print("Соединение с SQLite закрыто")
 
 
+# @bot.message_handler(commands=['list_coins'])
+def list_coins():
+    # bot.send_message(message.chat.id, 'Please, wait. I receive an information.')
+    sqlite_connection = sqlite3.connect('coins.db')
+    cursor = sqlite_connection.cursor()
+    print("Подключен к SQLite")
+    sqlite_select_query = f"""SELECT cm.id
+    FROM Coins_Markets cm"""
+    cursor.execute(sqlite_select_query)
+    text = cursor.fetchall()
+    cursor.close()
+    text = str(text)
+    result = text.replace("[", "").replace("(", "").replace("'","").replace(",","").replace(")","\n").replace("]","")
+    print(result)
+    # bot.send_message(message.chat.id, text)
+    # with open("name_coins.txt", 'w') as f:
+    #     for line in text:
+    #         line = str(line)
+    #         # print(line[2].upper() + line[:2])
+    #         line = line.replace("(", '').replace(")","").replace(",","").replace("'", "")
+    #         f.write(line[0].upper() + line[1:])
+    #         f.write('\n')
+    # f.close()
+    # doc = open('name_coins.txt', 'rb')
+    # bot.send_message(message.chat.id, "Sending...")
+    # bot.send_document(message.chat.id, doc)
+    # doc.close()
+
+print(list_coins())
 
 def create_record_into_db(message):
     if message.text == "/start":
-        return start(message)
+        return (message)
     userMoney = message.text
     userMoney = userMoney.lower()
     userMoney = userMoney.split()
     print(userMoney)
-    crypto_coin = ['bitcoin', 'ethereum', 'binancecoin',
-     'litecoin', 'solana', 'avalanche-2',
-     'terra-luna', 'ftx-token',
-     'polkadot', 'near', 'uniswap',
-     'matic-network', 'cardano',
-     'the-graph', 'dogecoin']
+    # crypto_coin = ['bitcoin', 'ethereum', 'binancecoin',
+    #  'litecoin', 'solana', 'avalanche-2',
+    #  'terra-luna', 'ftx-token',
+    #  'polkadot', 'near', 'uniswap',
+    #  'matic-network', 'cardano',
+    #  'the-graph', 'dogecoin']
+    connect = sqlite3.connect('coins.db')
+    cursor = connect.cursor()
+    cursor.execute("INSERT INTO BUY_COIN (id_customer, name, coin, invested_money, amount_in_crypto , notified_or_not) VALUES (? ,?, ?, ?, ?, ?);", (message.chat.id, message.from_user.first_name, coin, price, user_money_in_btc,0))
+    connect.commit()
+    cursor.close
+    connect.close()
+    # print(crypto_coin)
     try:
         coin, price = userMoney[0], userMoney[1]
         if userMoney[1].isdigit() or float(userMoney[1]) and userMoney[0] in crypto_coin:
@@ -113,6 +150,37 @@ def create_record_into_db(message):
                                                 "\nTry again, please."
                                                 "\nExample:"
                                                 "\nBitcoin 50.")
-        bot.register_next_step_handler(msg, buy_coin_bitcoin_on_user_money)
+        bot.register_next_step_handler(msg, buy_coin_bitcoin)
+
+def find_crypto(message):
+    try:
+        crypto_price.get_top_100_coins()
+        user_coin = message.text
+        user_coin = user_coin.lower()
+        # coin_plot(user_coin.user_coin)
+        print(user_coin)
+        sqlite_connection = sqlite3.connect('coins.db')
+        cursor = sqlite_connection.cursor()
+        print("Подключен к SQLite")
+        cursor.execute("SELECT cm.market_cap_rank,cm.id, cm.name, cm.current_price, cm.price_change_24h, cm.price_change_percentage_24h, cm.market_cap, cm.market_cap_change_percentage_24h,cm.total_volume, cm.circulating_supply, cm.max_supply, cm.high_24h, cm.low_24h FROM Coins_Markets cm WHERE cm.id = ?", (user_coin,))
+        data = cursor.fetchone()
+        user = []
+        print(data)
+        print('hey', data[10])
+        for i in data:
+            user.append(i)
+        if user[10] is None:
+            user[10] = 0
+        sqlite_connection.commit()
+        cursor.close()
+        result = 'Market Cap Rank: {} \nName: {} \nPrice: {}$ \nPrice Change 24h: {}$ \nPrice Change 24h: {}% \nMarket Cap: {:,} \nMarket Cap 24h: {}% \nTotal Volume: {:,} \nCirculating Supply: {:,} \nMax suply: {:,} \nLow Price 24h: {}$ \nHigh price 24h: {}$'.format(user[0], user[2], user[3], user[4], user[5], user[6], user[7], user[8], user[9], user[10], user[12], user[11])
+        bot.send_message(message.chat.id, result)
+    except:
+        bot.send_message(message.chat.id, "I can't find crypto with this name"
+        "\nCheck this file"
+        "\n/list_coins"
+        "\nCorrect names of coins"
+        "\nThen, try again"
+        "\n/find")
 
 bot.polling(none_stop=True, timeout=123)

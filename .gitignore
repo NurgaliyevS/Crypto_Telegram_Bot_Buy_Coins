@@ -5,6 +5,7 @@ __pycache__/
 .idea
 *.db
 .gitignore
+*.txt
 
 # C extensions
 *.so
