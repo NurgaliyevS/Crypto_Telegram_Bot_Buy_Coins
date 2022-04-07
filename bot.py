@@ -78,7 +78,6 @@ def read_sqlite_table(message):
             print("Соединение с SQLite закрыто")
 
 def list_coins():
-    # bot.send_message(message.chat.id, 'Please, wait. I receive an information.')
     sqlite_connection = sqlite3.connect('coins.db')
     cursor = sqlite_connection.cursor()
     print("Подключен к SQLite")
@@ -104,17 +103,17 @@ def create_record_into_db(message):
         if userMoney[1].isdigit() or float(userMoney[1]) and userMoney[0] in list_coins():
             print('yes')
             price = float(price)
-            user_money_in_btc = 1 * price / crypto_price.check_crypto_price(coin)
-            print(user_money_in_btc)
-            user_money_in_btc = round(user_money_in_btc, 5)
-            bot.send_message(message.chat.id, f'Your {price}$ in {coin[0].upper() + coin[1::]} is {user_money_in_btc}.')
+            user_money_in_coin = 1 * price / crypto_price.check_crypto_price(coin)
+            print(user_money_in_coin)
+            user_money_in_coin = round(user_money_in_coin, 5)
+            bot.send_message(message.chat.id, f'Your {price}$ in {coin[0].upper() + coin[1::]} is {user_money_in_coin}.')
             connect = sqlite3.connect('customer.db')
             cursor = connect.cursor()
-            cursor.execute("INSERT INTO BUY_COIN (id_customer, name, coin, invested_money, amount_in_crypto , notified_or_not) VALUES (? ,?, ?, ?, ?, ?);", (message.chat.id, message.from_user.first_name, coin, price, user_money_in_btc,0))
+            cursor.execute("INSERT INTO BUY_COIN (id_customer, name, coin, invested_money, amount_in_crypto , notified_or_not) VALUES (? ,?, ?, ?, ?, ?);", (message.chat.id, message.from_user.first_name, coin, price, user_money_in_coin,0))
             connect.commit()
             cursor.close
             connect.close()
-            return user_money_in_btc
+            return user_money_in_coin
     except:
         msg = bot.send_message(message.chat.id, "I don't get it."
                                                 "\nTry again, please."
@@ -124,7 +123,7 @@ def create_record_into_db(message):
 
 def find_crypto(message):
     try:
-        crypto_price.get_top_100_coins()
+        crypto_price.get_top_250_coins()
         user_coin = message.text
         user_coin = user_coin.lower()
         # coin_plot(user_coin.user_coin)
