@@ -25,9 +25,8 @@ def create_db_for_buy_coin():
                         )""")
     connect.commit()
 
-
 @bot.message_handler(commands=['buy'])
-def buy_coin_bitcoin (message):
+def buy_coin (message):
     msg = bot.send_message(message.chat.id, "I can buy only Bitcoin."
                                             "\nCount everything in dollars."
                                               "\n"
@@ -40,7 +39,6 @@ def buy_coin_bitcoin (message):
                                                     "\nIf you want to exit?"
                                                     "\n/start")
     bot.register_next_step_handler(msg, create_record_into_db)
-
 
 #### ЧТЕНИЕ ВСЕГО ЧТО ЕСТЬ В БАЗЕ ДАННЫХ
 #### НЕОБХОДИМО БРАТЬ ОБРАБОТАТЬ ЭТИ ДАННЫЕ
@@ -79,8 +77,6 @@ def read_sqlite_table(message):
             sqlite_connection.close()
             print("Соединение с SQLite закрыто")
 
-
-# @bot.message_handler(commands=['list_coins'])
 def list_coins():
     # bot.send_message(message.chat.id, 'Please, wait. I receive an information.')
     sqlite_connection = sqlite3.connect('coins.db')
@@ -93,22 +89,7 @@ def list_coins():
     cursor.close()
     text = str(text)
     result = text.replace("[", "").replace("(", "").replace("'","").replace(",","").replace(")","\n").replace("]","")
-    print(result)
-    # bot.send_message(message.chat.id, text)
-    # with open("name_coins.txt", 'w') as f:
-    #     for line in text:
-    #         line = str(line)
-    #         # print(line[2].upper() + line[:2])
-    #         line = line.replace("(", '').replace(")","").replace(",","").replace("'", "")
-    #         f.write(line[0].upper() + line[1:])
-    #         f.write('\n')
-    # f.close()
-    # doc = open('name_coins.txt', 'rb')
-    # bot.send_message(message.chat.id, "Sending...")
-    # bot.send_document(message.chat.id, doc)
-    # doc.close()
-
-print(list_coins())
+    return result
 
 def create_record_into_db(message):
     if message.text == "/start":
@@ -116,28 +97,17 @@ def create_record_into_db(message):
     userMoney = message.text
     userMoney = userMoney.lower()
     userMoney = userMoney.split()
-    print(userMoney)
-    # crypto_coin = ['bitcoin', 'ethereum', 'binancecoin',
-    #  'litecoin', 'solana', 'avalanche-2',
-    #  'terra-luna', 'ftx-token',
-    #  'polkadot', 'near', 'uniswap',
-    #  'matic-network', 'cardano',
-    #  'the-graph', 'dogecoin']
-    connect = sqlite3.connect('coins.db')
-    cursor = connect.cursor()
-    cursor.execute("INSERT INTO BUY_COIN (id_customer, name, coin, invested_money, amount_in_crypto , notified_or_not) VALUES (? ,?, ?, ?, ?, ?);", (message.chat.id, message.from_user.first_name, coin, price, user_money_in_btc,0))
-    connect.commit()
-    cursor.close
-    connect.close()
-    # print(crypto_coin)
+    if userMoney[0] in list_coins():
+        print('yes')
     try:
         coin, price = userMoney[0], userMoney[1]
-        if userMoney[1].isdigit() or float(userMoney[1]) and userMoney[0] in crypto_coin:
+        if userMoney[1].isdigit() or float(userMoney[1]) and userMoney[0] in list_coins():
             print('yes')
             price = float(price)
-            user_money_in_btc = 1 * price / crypto_price.check_btc_price()
+            user_money_in_btc = 1 * price / crypto_price.check_crypto_price(coin)
+            print(user_money_in_btc)
             user_money_in_btc = round(user_money_in_btc, 5)
-            bot.send_message(message.chat.id, f'Your {price}$ in {coin[0].upper() + coin[1::]} is {user_money_in_btc}₿.')
+            bot.send_message(message.chat.id, f'Your {price}$ in {coin[0].upper() + coin[1::]} is {user_money_in_btc}.')
             connect = sqlite3.connect('customer.db')
             cursor = connect.cursor()
             cursor.execute("INSERT INTO BUY_COIN (id_customer, name, coin, invested_money, amount_in_crypto , notified_or_not) VALUES (? ,?, ?, ?, ?, ?);", (message.chat.id, message.from_user.first_name, coin, price, user_money_in_btc,0))
@@ -149,8 +119,8 @@ def create_record_into_db(message):
         msg = bot.send_message(message.chat.id, "I don't get it."
                                                 "\nTry again, please."
                                                 "\nExample:"
-                                                "\nBitcoin 50.")
-        bot.register_next_step_handler(msg, buy_coin_bitcoin)
+                                                "\nBitcoin 50")
+        bot.register_next_step_handler(msg, buy_coin)
 
 def find_crypto(message):
     try:
