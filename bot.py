@@ -131,7 +131,7 @@ def find_crypto(message):
         sqlite_connection = sqlite3.connect('coins.db')
         cursor = sqlite_connection.cursor()
         print("Подключен к SQLite")
-        cursor.execute("SELECT cm.market_cap_rank,cm.id, cm.name, cm.current_price, cm.price_change_24h, cm.price_change_percentage_24h, cm.market_cap, cm.market_cap_change_percentage_24h,cm.total_volume, cm.circulating_supply, cm.max_supply, cm.high_24h, cm.low_24h FROM Coins_Markets cm WHERE cm.id = ?", (user_coin,))
+        cursor.execute("SELECT cm.market_cap_rank,cm.id, lower(cm.name), cm.current_price, cm.price_change_24h, cm.price_change_percentage_24h, cm.market_cap, cm.market_cap_change_percentage_24h,cm.total_volume, cm.circulating_supply, cm.max_supply, cm.high_24h, cm.low_24h FROM Coins_Markets cm WHERE lower(cm.name) = '{}' or cm.id = '{}'".format(user_coin, user_coin))
         data = cursor.fetchone()
         user = []
         print(data)
